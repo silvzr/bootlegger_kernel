@@ -12,6 +12,10 @@ KERNEL_BRANCH=""
 KERNELSU_REPO="tiann/KernelSU"
 KSU_ENABLED="false"
 
+# KernelSU Custom Manager
+MANAGER_EXPECTED_SIZE="0x354"
+MANAGER_EXPECTED_HASH="55a3dc257ef27810af6eb6e5d0b0f2ee1af1c57626dc67260abffb281db37836"
+
 # Anykernel3
 ANYKERNEL3_GIT="https://github.com/silvzr/AnyKernel3.git"
 ANYKERNEL3_BRANCH="master"
@@ -37,34 +41,42 @@ elif [[ $1 == "NonKSU" ]]; then
     echo "Input changed KSU_ENABLED to false"
 fi
 
-if [[ $2 == *.git ]]; then
-    KERNEL_GIT=$2
-    echo "Input changed KERNEL_GIT to $2"
+if [[ $2 == "true" ]]; then
+    KSU_MANAGER="true"
+	echo "Input changed KSU_MANAGER to true"
+elif [[ $2 == "false" ]]; then
+    KSU_MANAGER="false"
+	echo "Input changed KSU_MANAGER to false"
 fi
 
-if [[ $3 ]]; then
-    KERNEL_BRANCH=$3
-    echo "Input changed KERNEL_BRANCH to $3"
+if [[ $3 == *.git ]]; then
+    KERNEL_GIT=$3
+    echo "Input changed KERNEL_GIT to $3"
 fi
 
-if [[ $4 == *.git ]]; then
-    ANYKERNEL3_GIT=$4
-    echo "Input changed KERNEL_GIT to $4"
+if [[ $4 ]]; then
+    KERNEL_BRANCH=$4
+    echo "Input changed KERNEL_BRANCH to $4"
 fi
 
-if [[ $5 ]]; then
-    DEVICE_CODE=$5
-    echo "Input changed DEVICE_CODE to $5"
+if [[ $5 == *.git ]]; then
+    ANYKERNEL3_GIT=$5
+    echo "Input changed KERNEL_GIT to $5"
 fi
 
 if [[ $6 ]]; then
-    DEVICE_DEFCONFIG=$6
-    echo "Input changed DEVICE_DEFCONFIG to $6"
+    DEVICE_CODE=$6
+    echo "Input changed DEVICE_CODE to $6"
 fi
 
 if [[ $7 ]]; then
-    COMMON_DEFCONFIG=$7
-    echo "Input changed COMMON_DEFCONFIG to $7"
+    DEVICE_DEFCONFIG=$7
+    echo "Input changed DEVICE_DEFCONFIG to $7"
+fi
+
+if [[ $8 ]]; then
+    COMMON_DEFCONFIG=$8
+    echo "Input changed COMMON_DEFCONFIG to $8"
 fi
 
 # Set variables
@@ -86,8 +98,8 @@ CLANG_SOURCE="https://github.com/$CLANG_REPO"
 README="https://github.com/silvzr/bootlegger_kernel_archive/blob/master/README.md"
 
 if [[ ! -z "$COMMON_DEFCONFIG" ]]; then
-    DEVICE_DEFCONFIG=$7
-    COMMON_DEFCONFIG=$6
+    DEVICE_DEFCONFIG=$8
+    COMMON_DEFCONFIG=$7
 fi
 
 DEVICE_DEFCONFIG_FILE="$KERNEL_DIR/$DEVICE_ARCH/configs/$DEVICE_DEFCONFIG"
@@ -228,8 +240,25 @@ elif
         cp ./patches/KernelSU/revert_drop_non_gki.patch  $KERNEL_DIR/KernelSU/
         cd $KERNEL_DIR/KernelSU && patch -p1 < revert_drop_non_gki.patch
         msg "Readding support for Non GKI kernels..." && cd $WORKDIR
+	if [[ $KSU_MANAGER == "true" ]]; then
+	    cd $WORKDIR/out/manager && wget -q https://nightly.link/tiann/KernelSU/workflows/build-manager/main/ksud-x86_64-unknown-linux-musl.zip
+	    unzip ksud-x86_64-unknown-linux-musl.zip && mv x86_64-unknown-linux-musl/release/* .
+	    mv *.apk manager.apk && chmod +x ksud
+	    MANAGER_SIGNATURE=$(./ksud debug get-sign manager.apk)
+	    MANAGER_EXPECTED_SIZE=$(echo "$MANAGER_SIGNATURE" | grep 'size:' | sed 's/.*size: //; s/,.*//')
+	    MANAGER_EXPECTED_HASH=$(echo "$MANAGER_SIGNATURE" | grep 'hash:' | sed 's/.*hash: //; s/,.*//')
+            msg "Backporting latest KSU manager..." && cd $WORKDIR
+	fi
     fi
 
+    if [[ ! -z "$MANAGER_EXPECTED_SIZE" ]] && [[ ! -z "$MANAGER_EXPECTED_HASH" ]]; then
+	cd $KERNEL_DIR/KernelSU
+	sed -i "s/^KSU_EXPECTED_SIZE := .*/KSU_EXPECTED_SIZE := $MANAGER_EXPECTED_SIZE/" kernel/Makefile
+	sed -i "s/^KSU_EXPECTED_HASH := .*/KSU_EXPECTED_HASH := $MANAGER_EXPECTED_HASH/" kernel/Makefile
+	msg "KSU_EXPECTED_SIZE := $MANAGER_EXPECTED_SIZE"
+        msg "KSU_EXPECTED_HASH := $MANAGER_EXPECTED_HASH" && cd $WORKDIR
+    fi
+	
     cp ./patches/KernelSU/Backport/hook_patches_ksu-$KERNEL_VER.patch $KERNEL_DIR/
     cd $KERNEL_DIR && patch -p1 < hook_patches_ksu-$KERNEL_VER.patch
     msg "Importing KSU hooks for $KERNEL_VER kernel..." && cd $WORKDIR
