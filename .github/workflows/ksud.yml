@@ -12,7 +12,7 @@ on:
       pack_lkm:
         required: false
         type: boolean
-        default: true
+        default: false
       use_cache:
         required: false
         type: boolean
@@ -23,22 +23,34 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        repository: tiann/KernelSU
+        repository: silvzr/KernelSU
         fetch-depth: 0
-
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-    
-    - name: Prepare LKM fies
-      if: ${{ inputs.pack_lkm }}
-      run: |
-        cp android*-lkm/*_kernelsu.ko ./userspace/ksud/bin/aarch64/
+        persist-credentials: false        
         
+    - name: Checking repo token
+      id: check_secret
+      run: |
+        if [ ! -z "${{ secrets.SYNC_UPSTREAM_KSU }}" ]; then
+          echo "Secret exists."
+          echo "exists=true" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Sync tiann changes
+      if: ${{ steps.check_secret.outputs.exists == 'true' }}
+      uses: silvzr/Fork-Sync-With-Upstream-action@v3.4.2
+      with:
+        target_sync_repo: silvzr/KernelSU
+        target_sync_branch: non-gki
+        target_repo_token: ${{ secrets.SYNC_UPSTREAM_KSU }}
+        upstream_sync_branch: main
+        upstream_sync_repo: tiann/KernelSU
+        git_config_pull_rebase: true
+        target_branch_push_args: --force
+  
     - name: Setup rustup
       run: |
         rustup update stable
-        rustup target add x86_64-apple-darwin
-        rustup target add aarch64-apple-darwin
+        
     - uses: Swatinem/rust-cache@v2
       with:
         workspaces: userspace/ksud
