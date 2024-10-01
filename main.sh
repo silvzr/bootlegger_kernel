@@ -23,8 +23,8 @@ COMMON_DEFCONFIG=""
 DEVICE_ARCH="arch/arm64"
 
 # Clang
-CLANG_REPO="ZyCromerZ/Clang"
-CLANG_VERSION="latest"
+CLANG_REPO="crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r536225"
+CLANG_BRANCH="14.0"
 
 # ------------------------------------------------------------
 
@@ -78,11 +78,6 @@ fi
 # Set variables
 WORKDIR="$(pwd)"
 
-if [[ $CLANG_VERSION == "latest" ]]; then
-    CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/latest | grep -wo "https.*" | grep Clang-.*.tar.gz | sed 's/.$//')"
-else 
-    CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/tags/$CLANG_VERSION | grep -wo "https.*" | grep Clang-.*.tar.gz | sed 's/.$//')"
-fi
 CLANG_DIR="$WORKDIR/Clang/bin"
 
 KERNEL_REPO="${KERNEL_GIT::-4}/"
@@ -90,7 +85,7 @@ KERNEL_SOURCE="${KERNEL_REPO::-1}/tree/$KERNEL_BRANCH"
 KERNEL_DIR="$WORKDIR/$KERNEL_NAME"
 
 KERNELSU_SOURCE="https://github.com/$KERNELSU_REPO"
-CLANG_SOURCE="https://github.com/$CLANG_REPO"
+CLANG_SOURCE="https://gitlab.com/$CLANG_REPO"
 README="https://github.com/silvzr/bootlegger_kernel_archive/blob/master/README.md"
 
 if [[ ! -z "$COMMON_DEFCONFIG" ]]; then
@@ -106,6 +101,15 @@ DTBO="$KERNEL_DIR/out/$DEVICE_ARCH/boot/dtbo.img"
 export KBUILD_BUILD_USER=silvzr
 export KBUILD_BUILD_HOST=GitHubCI
 
+# Git Configurations
+
+git config --global http.postBuffer 524288000
+git config --global core.packedGitLimit 512m
+git config --global core.packedGitWindowSize 512m
+git config --global core.bigFileThreshold 50m
+git config --global pack.windowMemory 100m
+git config --global pack.packSizeLimit 100m
+
 # Highlight
 msg() {
 	echo
@@ -119,17 +123,14 @@ cd $WORKDIR
 msg "Setup"
 
 msg "Clang"
-mkdir -p Clang
-aria2c -s16 -x16 -k1M $CLANG_DLINK -o Clang.tar.gz
-tar -C Clang/ -zxvf Clang.tar.gz
-rm -rf Clang.tar.gz
+git clone --depth=1 $CLANG_SOURCE --single-branch -b $CLANG_BRANCH Clang
 
 CLANG_VERSION="$($CLANG_DIR/clang --version | head -n 1 | cut -f1 -d "(" | sed 's/.$//')"
 CLANG_VERSION=${CLANG_VERSION::-3} # May get removed later
 LLD_VERSION="$($CLANG_DIR/ld.lld --version | head -n 1 | cut -f1 -d "(" | sed 's/.$//')"
 
 msg "Kernel"
-git clone --depth=1 $KERNEL_GIT -b $KERNEL_BRANCH $KERNEL_DIR
+git clone --depth=1 $KERNEL_GIT --single-branch -b $KERNEL_BRANCH $KERNEL_DIR
 
 KERNEL_VERSION=$(cat $KERNEL_DIR/Makefile | grep -w "VERSION =" | cut -d '=' -f 2 | cut -b 2-)\
 .$(cat $KERNEL_DIR/Makefile | grep -w "PATCHLEVEL =" | cut -d '=' -f 2 | cut -b 2-)\
