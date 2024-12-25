@@ -830,10 +830,27 @@ diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
 index b8708a383b85..a2720f6d9e5a 100644
 --- a/fs/proc/task_mmu.c
 +++ b/fs/proc/task_mmu.c
-@@ -348,6 +348,10 @@ static void show_vma_header_prefix(struct seq_file *m,
+@@ -349,6 +349,27 @@
  		   MAJOR(dev), MINOR(dev), ino);
  }
  
++static void show_vma_header_prefix_fake(struct seq_file *m,
++				   unsigned long start, unsigned long end,
++				   vm_flags_t flags, unsigned long long pgoff,
++				   dev_t dev, unsigned long ino)
++{
++	seq_setwidth(m, 25 + sizeof(void *) * 6 - 1);
++	seq_printf(m, "%08lx-%08lx %c%c%c%c %08llx %02x:%02x %lu ",
++		   start,
++		   end,
++		   flags & VM_READ ? 'r' : '-',
++		   flags & VM_WRITE ? '-' : '-',
++		   flags & VM_EXEC ? '-' : '-',
++		   flags & VM_MAYSHARE ? 's' : 'p',
++		   pgoff,
++		   MAJOR(dev), MINOR(dev), ino);
++}
++
 +#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
 +extern void susfs_sus_ino_for_show_map_vma(unsigned long ino, dev_t *out_dev, unsigned long *out_ino);
 +#endif
@@ -841,7 +858,7 @@ index b8708a383b85..a2720f6d9e5a 100644
  static void
  show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
  {
-@@ -362,8 +366,17 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
+@@ -363,9 +384,29 @@
  
  	if (file) {
  		struct inode *inode = file_inode(vma->vm_file);
@@ -857,7 +874,48 @@ index b8708a383b85..a2720f6d9e5a 100644
 +bypass_orig_flow:
 +#endif
  		pgoff = ((loff_t)vma->vm_pgoff) << PAGE_SHIFT;
++        struct dentry *dentry = file->f_path.dentry;
++        if (dentry) {
++        	const char *path = (const char *)dentry->d_name.name; 
++            	if (strstr(path, "lineage")) { 
++	  	start = vma->vm_start;
++		end = vma->vm_end;
++		show_vma_header_prefix_fake(m, start, end, flags, pgoff, dev, ino);
++            	name = "/system/framework/framework-res.apk";
++		goto done;
++            	 	}
++            	}
  	}
+ 
+ 	start = vma->vm_start;
+
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2236,11 +2236,17 @@
+ 	rc = -ENOENT;
+ 	down_read(&mm->mmap_sem);
+ 	vma = find_exact_vma(mm, vm_start, vm_end);
+-	if (vma && vma->vm_file) {
+-		*path = vma->vm_file->f_path;
+-		path_get(path);
+-		rc = 0;
+-	}
++ 	if (vma) {
++        	if (vma->vm_file) {
++            		if (strstr(vma->vm_file->f_path.dentry->d_name.name, "lineage")) { 
++            		rc = kern_path("/system/framework/framework-res.apk", LOOKUP_FOLLOW, path);
++        	} else {
++			*path = vma->vm_file->f_path;
++			path_get(path);
++                	rc = 0;
++            		}
++        	}
++    	}
+ 	up_read(&mm->mmap_sem);
+ 
+ out_mmput:
+
  
 diff --git a/fs/proc_namespace.c b/fs/proc_namespace.c
 index b859aaeecb27..fb6f365837fb 100644
