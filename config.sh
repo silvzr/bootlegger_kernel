@@ -78,7 +78,7 @@ if [[ $KSU_ENABLED == "true" ]] && [[ ! -z "$KERNELSU_DIR" ]]; then
 
     if [[ ! -z "$KERNELSU_GITMODULE" ]]; then
         KSU_GIT_VERSION=$(cd KernelSU && git rev-list --count HEAD)
-        KERNELSU_VERSION=$(($KSU_GIT_VERSION + 10200))
+        KERNELSU_VERSION=$(($KSU_GIT_VERSION + 20000))
     else
         KERNELSU_VERSION=$(cat $KERNELSU_DIR/ksu.h | grep "KERNEL_SU_VERSION" | cut -c26-)
     fi
@@ -163,7 +163,7 @@ elif
     fi
 
     KSU_GIT_VERSION=$(cd KernelSU && git rev-list --count HEAD)
-    KERNELSU_VERSION=$(($KSU_GIT_VERSION + 10200))
+    KERNELSU_VERSION=$(($KSU_GIT_VERSION + 20000))
     msg "KernelSU Version: $KERNELSU_VERSION"
 
     if [[ -f "$KERNEL_DIR/.susfs_patched" ]]; then
