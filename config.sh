@@ -8,6 +8,12 @@ version_le() {
     [ "$(printf '%s\n' "$1" "$2" | sort -V | head -n1)" = "$1" ]
 }
 
+# Obtain latest release tag for KSU bashing
+latest_tag="$(
+  curl -s "https://api.github.com/repos/$KERNELSU_REPO/releases/latest" \
+  | jq -r '.tag_name'
+)"
+
 # Avoid dirty uname
 touch $KERNEL_DIR/.scmversion
 
@@ -90,7 +96,7 @@ if [[ $KSU_ENABLED == "true" ]] && [[ ! -z "$KERNELSU_DIR" ]]; then
 elif
    [[ $KSU_ENABLED == "true" ]]; then
     if [[ $KERNELSU_REPO == "backslashxx/KernelSU" ]]; then
-    	cd $KERNEL_DIR && curl -LSs "https://raw.githubusercontent.com/$KERNELSU_REPO/$KERNELSU_BRANCH/kernel/setup.sh" | bash -s v2.1.1-10
+    	cd $KERNEL_DIR && curl -LSs "https://raw.githubusercontent.com/$KERNELSU_REPO/$KERNELSU_BRANCH/kernel/setup.sh" | bash -s $latest_tag
     else
 	cd $KERNEL_DIR && curl -LSs "https://raw.githubusercontent.com/$KERNELSU_REPO/$KERNELSU_BRANCH/kernel/setup.sh" | bash -s $KERNELSU_BRANCH
     fi
