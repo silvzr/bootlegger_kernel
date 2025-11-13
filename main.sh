@@ -135,7 +135,7 @@ KERNEL_PID=$!
 wait $CLANG_PID $KERNEL_PID
 msg "Clone completed"
 
-CLANG_VERSION="$($CLANG_DIR/clang --version | head -n 1 | cut -f1 -d "(" | sed 's/.$//')"
+CLANG_VERSION="$("$CLANG_DIR/clang" --version 2>&1 | sed -nE '1{s/.clang version ([0-9]+(.[0-9]+){1,}).(based on [^)])./\1 (\2)/p}')"
 LLD_VERSION="$($CLANG_DIR/ld.lld --version | head -n 1 | cut -f1 -d "(" | sed 's/.$//')"
 
 KERNEL_VERSION=$(cat $KERNEL_DIR/Makefile | grep -w "VERSION =" | cut -d '=' -f 2 | cut -b 2-)\
