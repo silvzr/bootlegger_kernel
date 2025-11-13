@@ -9,12 +9,13 @@ KERNEL_GIT="https://github.com/silvzr/bootlegger_kernel_archive.git"
 KERNEL_BRANCH=""
 
 # KernelSU
-KERNELSU_REPO="tiann/KernelSU"
+KERNELSU_REPO="backslashxx/KernelSU"
+KERNELSU_BRANCH="master"
 KSU_ENABLED="false"
 
 # KernelSU Custom Manager
-MANAGER_EXPECTED_SIZE="0x354"
-MANAGER_EXPECTED_HASH="55a3dc257ef27810af6eb6e5d0b0f2ee1af1c57626dc67260abffb281db37836"
+MANAGER_EXPECTED_SIZE=""
+MANAGER_EXPECTED_HASH=""
 
 # Anykernel3
 ANYKERNEL3_GIT="https://github.com/silvzr/AnyKernel3.git"
