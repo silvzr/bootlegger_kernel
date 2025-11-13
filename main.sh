@@ -118,22 +118,29 @@ cd $WORKDIR
 # Setup
 msg "Setup"
 
-msg "Clang"
-git config --global http.postBuffer 524288000
-git clone --depth=1 $CLANG_SOURCE --single-branch -b $CLANG_BRANCH Clang
+msg "Cloning Clang and Kernel in parallel..."
+# Clang
+(
+    git config --global http.postBuffer 524288000
+    git clone --depth=1 $CLANG_SOURCE --single-branch -b $CLANG_BRANCH Clang
+) &
+CLANG_PID=$!
+
+# Kernel
+(
+    git clone --depth=1 $KERNEL_GIT --single-branch -b $KERNEL_BRANCH $KERNEL_DIR
+) &
+KERNEL_PID=$!
+
+wait $CLANG_PID $KERNEL_PID
+msg "Clone completed"
 
 CLANG_VERSION="$($CLANG_DIR/clang --version | head -n 1 | cut -f1 -d "(" | sed 's/.$//')"
-# CLANG_VERSION=${CLANG_VERSION::-3}
 LLD_VERSION="$($CLANG_DIR/ld.lld --version | head -n 1 | cut -f1 -d "(" | sed 's/.$//')"
-
-msg "Kernel"
-git clone --depth=1 $KERNEL_GIT --single-branch -b $KERNEL_BRANCH $KERNEL_DIR
 
 KERNEL_VERSION=$(cat $KERNEL_DIR/Makefile | grep -w "VERSION =" | cut -d '=' -f 2 | cut -b 2-)\
 .$(cat $KERNEL_DIR/Makefile | grep -w "PATCHLEVEL =" | cut -d '=' -f 2 | cut -b 2-)\
 .$(cat $KERNEL_DIR/Makefile | grep -w "SUBLEVEL =" | cut -d '=' -f 2 | cut -b 2-)
-# .$(cat $KERNEL_DIR/Makefile | grep -w "EXTRAVERSION =" | cut -d '=' -f 2 | cut -b 2-)
-
 KERNEL_VER=$(echo $KERNEL_VERSION | cut -d. -f1,2)
 
 msg "Kernel Version: $KERNEL_VERSION"
