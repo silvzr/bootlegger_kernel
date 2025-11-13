@@ -89,7 +89,11 @@ if [[ $KSU_ENABLED == "true" ]] && [[ ! -z "$KERNELSU_DIR" ]]; then
     sed -i "s/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION=\"-$KERNEL_BRANCH-$KERNEL_NAME-κsu\"/" $DEVICE_DEFCONFIG_FILE
 elif
    [[ $KSU_ENABLED == "true" ]]; then
-    cd $KERNEL_DIR && curl -LSs "https://raw.githubusercontent.com/$KERNELSU_REPO/main/kernel/setup.sh" | bash -s main
+    if [[ $KERNELSU_REPO == "backslashxx/KernelSU" ]]; then
+    	cd $KERNEL_DIR && curl -LSs "https://raw.githubusercontent.com/$KERNELSU_REPO/$KERNELSU_BRANCH/kernel/setup.sh" | bash -s v2.1.1-10
+    else
+	cd $KERNEL_DIR && curl -LSs "https://raw.githubusercontent.com/$KERNELSU_REPO/$KERNELSU_BRANCH/kernel/setup.sh" | bash -s $KERNELSU_BRANCH
+    fi
 
     if version_le "$KERNEL_VER" "5.9"; then
         if [[ ! -f "$WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/add_susfs_in_kernel-$KERNEL_VER.patch" ]]; then
@@ -98,8 +102,8 @@ elif
             msg "Backporting path_umount from 5.10.9..."
         fi
 
-        cd $KERNEL_DIR/KernelSU && git revert 898e9d4f8ca9b2f46b0c6b36b80a872b5b88d899
-        msg "Readding support for Non GKI kernels..."
+        # cd $KERNEL_DIR/KernelSU && git revert 898e9d4f8ca9b2f46b0c6b36b80a872b5b88d899
+        # msg "Readding support for Non GKI kernels..."
 
 	if [[ $KSU_MANAGER == "true" ]]; then
 	    cd $WORKDIR/out/manager && wget -q https://nightly.link/tiann/KernelSU/workflows/build-manager/main/ksud-x86_64-unknown-linux-musl.zip
@@ -119,22 +123,28 @@ elif
 	msg "KSU_EXPECTED_SIZE := $MANAGER_EXPECTED_SIZE"
         msg "KSU_EXPECTED_HASH := $MANAGER_EXPECTED_HASH" && cd $WORKDIR
     fi
-	
-    cp $WORKDIR/patches/KernelSU/Backport/hook_patches_ksu-$KERNEL_VER.patch $KERNEL_DIR/
-    cd $KERNEL_DIR && patch -p1 < hook_patches_ksu-$KERNEL_VER.patch
-    msg "Importing KSU hooks for $KERNEL_VER kernel..."
 
-    cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/enable_susfs_for_ksu_auto.patch $KERNEL_DIR/KernelSU/
-    cd $KERNEL_DIR/KernelSU && patch -p1 -F 3 < enable_susfs_for_ksu_auto.patch
-    msg "Importing SuSFS into KSU source..."
+    if [[ $KERNELSU_REPO == "backslashxx/KernelSU" ]]; then
+    	cp $WORKDIR/patches/KernelSU/Backport/hook_patches_xxksu-$KERNEL_VER.patch $KERNEL_DIR/
+    	cd $KERNEL_DIR && patch -p1 -F 3 < hook_patches_xxksu-$KERNEL_VER.patch
+    	msg "Importing scope minimized KSU hooks for $KERNEL_VER kernel..."
+    else	
+	cp $WORKDIR/patches/KernelSU/Backport/hook_patches_ksu-$KERNEL_VER.patch $KERNEL_DIR/
+    	cd $KERNEL_DIR && patch -p1 < hook_patches_ksu-$KERNEL_VER.patch
+    	msg "Importing KSU hooks for $KERNEL_VER kernel..."
 
-    cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/add_susfs_in_kernel-$KERNEL_VER.patch $KERNEL_DIR/
-    cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/susfs.c $KERNEL_DIR/fs/
-    cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/susfs.h $KERNEL_DIR/include/linux/
-    cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/sus_su.c $KERNEL_DIR/fs/
-    cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/sus_su.h $KERNEL_DIR/include/linux/
-    cd $KERNEL_DIR && patch -p1 -F 3 < add_susfs_in_kernel-$KERNEL_VER.patch
-    msg "Importing SuSFS into $KERNEL_VER kernel..."
+    	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/enable_susfs_for_ksu_auto.patch $KERNEL_DIR/KernelSU/
+    	cd $KERNEL_DIR/KernelSU && patch -p1 -F 3 < enable_susfs_for_ksu_auto.patch
+    	msg "Importing SuSFS into KSU source..."
+
+    	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/add_susfs_in_kernel-$KERNEL_VER.patch $KERNEL_DIR/
+    	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/susfs.c $KERNEL_DIR/fs/
+    	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/susfs.h $KERNEL_DIR/include/linux/
+    	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/sus_su.c $KERNEL_DIR/fs/
+    	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/sus_su.h $KERNEL_DIR/include/linux/
+    	cd $KERNEL_DIR && patch -p1 -F 3 < add_susfs_in_kernel-$KERNEL_VER.patch 
+    	msg "Importing SuSFS into $KERNEL_VER kernel..." && touch .susfs_patched
+    fi
 
     cd $KERNEL_DIR
     if [[ ! -f "$WORKDIR/patches/KernelSU/Backport/hook_patches_ksu-$KERNEL_VER.patch" ]]; then
@@ -145,15 +155,21 @@ elif
         msg "Hook patches not found! Using kprobes..."
     else
     	echo "CONFIG_KSU=y" >> $DEVICE_DEFCONFIG_FILE
-    	echo "CONFIG_KSU_SUSFS=y" >> $DEVICE_DEFCONFIG_FILE
-    	echo "CONFIG_KPROBES=n" >> $DEVICE_DEFCONFIG_FILE # it will conflict with KSU hooks if it's on
+	echo "CONFIG_KSU_EXTRAS=y" >> $DEVICE_DEFCONFIG_FILE
+	if [[ $KERNELSU_REPO != "backslashxx/KernelSU" ]]; then
+    	    echo "CONFIG_KPROBES=n" >> $DEVICE_DEFCONFIG_FILE # it will conflict with KSU hooks if it's on
+	    echo "CONFIG_KSU_SUSFS=y" >> $DEVICE_DEFCONFIG_FILE
+	fi
     fi
 
     KSU_GIT_VERSION=$(cd KernelSU && git rev-list --count HEAD)
     KERNELSU_VERSION=$(($KSU_GIT_VERSION + 10200))
-    SUSFS_VERSION=$(grep "SuSFS version:" $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/add_susfs_in_kernel-$KERNEL_VER.patch | cut -d' ' -f3)
     msg "KernelSU Version: $KERNELSU_VERSION"
-    msg "SuSFS version: $SUSFS_VERSION"
+
+    if [[ -f "$KERNEL_DIR/.susfs_patched" ]]; then
+    	SUSFS_VERSION=$(grep "SuSFS version:" $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/add_susfs_in_kernel-$KERNEL_VER.patch | cut -d' ' -f3)
+    	msg "SuSFS version: $SUSFS_VERSION"
+    fi
     sed -i "s/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION=\"-$KERNEL_BRANCH-$KERNEL_NAME-κsu\"/" $DEVICE_DEFCONFIG_FILE
 fi
 if [[ $KSU_ENABLED == "false" ]]; then
