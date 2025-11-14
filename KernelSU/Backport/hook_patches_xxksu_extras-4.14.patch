@@ -1,0 +1,120 @@
+4.14 KernelSU Scope-Minimized Hooks v1.6 - Extras
+
+https://github.com/backslashxx/KernelSU/issues/5
+This refactors original KSU hooks to replace deep kernel function hooks with targeted hooks.
+This backports KernelSU pr#1657 and having pr#2084 elements (32-bit sucompat).
+It reduces the scope of kernel function interception and still maintains full fucntionality.
+
+Signed-off-by: backslashxx <118538522+backslashxx@users.noreply.github.com>
+---
+ drivers/input/input.c | 11 +++++++++++
+ fs/read_write.c       | 10 ++++++++++
+ kernel/reboot.c       |  8 ++++++++
+ security/selinux/avc.c | 7 +++++++
+ 4 files changed, 36 insertions(+)
+
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index 85e9c9649da8..1a62de74b3a9 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -436,11 +436,22 @@ static void input_handle_event(struct input_dev *dev,
+  * to 'seed' initial state of a switch or initial position of absolute
+  * axis, etc.
+  */
++#ifdef CONFIG_KSU
++extern bool ksu_input_hook __read_mostly;
++extern __attribute__((cold)) int ksu_handle_input_handle_event(
++			unsigned int *type, unsigned int *code, int *value);
++#endif
++
+ void input_event(struct input_dev *dev,
+ 		 unsigned int type, unsigned int code, int value)
+ {
+ 	unsigned long flags;
+ 
++#ifdef CONFIG_KSU
++	if (unlikely(ksu_input_hook))
++		ksu_handle_input_handle_event(&type, &code, &value);
++#endif
++
+ 	if (is_event_supported(type, dev->evbit, EV_MAX)) {
+ 
+ 		spin_lock_irqsave(&dev->event_lock, flags);
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 0da6e4f19d7f..045f42acd80a 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -568,11 +568,21 @@ static inline void file_pos_write(struct file *file, loff_t pos)
+ 		file->f_pos = pos;
+ }
+ 
++#ifdef CONFIG_KSU
++extern bool ksu_vfs_read_hook __read_mostly;
++extern __attribute__((cold)) int ksu_handle_sys_read(unsigned int fd,
++				char __user **buf_ptr, size_t *count_ptr);
++#endif
++
+ SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+ {
+ 	struct fd f = fdget_pos(fd);
+ 	ssize_t ret = -EBADF;
+ 
++#ifdef CONFIG_KSU
++	if (unlikely(ksu_vfs_read_hook)) 
++		ksu_handle_sys_read(fd, &buf, &count);
++#endif
+ 	if (f.file) {
+ 		loff_t pos = file_pos_read(f.file);
+ 		ret = vfs_read(f.file, buf, count, &pos);
+diff --git a/kernel/reboot.c b/kernel/reboot.c
+index 2946ed1d99d4..6806349c17f4 100644
+--- a/kernel/reboot.c
++++ b/kernel/reboot.c
+@@ -277,6 +277,11 @@ static DEFINE_MUTEX(reboot_mutex);
+  *
+  * reboot doesn't sync: do that yourself before calling this.
+  */
++
++#ifdef CONFIG_KSU
++extern int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user **arg);
++#endif
++
+ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 		void __user *, arg)
+ {
+@@ -284,6 +289,10 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 	char buffer[256];
+ 	int ret = 0;
+ 
++#ifdef CONFIG_KSU 
++	ksu_handle_sys_reboot(magic1, magic2, cmd, &arg);
++#endif
++
+ 	/* We only trust the superuser with rebooting the system. */
+ 	if (!ns_capable(pid_ns->user_ns, CAP_SYS_BOOT))
+ 		return -EPERM;
+diff --git a/security/selinux/avc.c b/security/selinux/avc.c
+index 1b8f957c2b5f..cdd8880ae578 100644
+--- a/security/selinux/avc.c
++++ b/security/selinux/avc.c
+@@ -761,6 +761,10 @@ static void avc_audit_post_callback(struct audit_buffer *ab, void *a)
+ 	}
+ }
+ 
++#ifdef CONFIG_KSU
++extern int ksu_handle_slow_avc_audit(u32 *tsid);
++#endif
++
+ /* This is the slow part of avc audit with big stack footprint */
+ noinline int slow_avc_audit(struct selinux_state *state,
+ 			    u32 ssid, u32 tsid, u16 tclass,
+@@ -771,6 +775,9 @@ noinline int slow_avc_audit(struct selinux_state *state,
+ 	struct common_audit_data stack_data;
+ 	struct selinux_audit_data sad;
+ 
++#ifdef CONFIG_KSU
++	ksu_handle_slow_avc_audit(&tsid);
++#endif
+ 	if (!a) {
+ 		a = &stack_data;
+ 		a->type = LSM_AUDIT_DATA_NONE;

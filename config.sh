@@ -14,6 +14,14 @@ latest_tag="$(
   | jq -r '.tag_name'
 )"
 
+# Determine if kernel has enabled kprobes or not
+has_kprobes() {
+    for def in $DEVICE_DEFCONFIG $COMMON_DEFCONFIG; do
+        grep -q '^CONFIG_KPROBES=y' "$DEVICE_ARCH/configs/$def" && return 0
+    done
+    return 1
+}
+
 # Avoid dirty uname
 touch $KERNEL_DIR/.scmversion
 
@@ -134,6 +142,12 @@ elif
     	cp $WORKDIR/patches/KernelSU/Backport/hook_patches_xxksu-$KERNEL_VER.patch $KERNEL_DIR/
     	cd $KERNEL_DIR && patch -p1 -F 3 < hook_patches_xxksu-$KERNEL_VER.patch
     	msg "Importing scope minimized KSU hooks for $KERNEL_VER kernel..."
+
+	if ! has_kprobes; then
+    	    cp $WORKDIR/patches/KernelSU/Backport/hook_patches_xxksu_extras-$KERNEL_VER.patch $KERNEL_DIR/
+    	    cd $KERNEL_DIR && patch -p1 -F 3 < hook_patches_xxksu_extras-$KERNEL_VER.patch
+    	    msg "Kprobes disabled! Adding other necessary hooks for $KERNEL_VER kernel..."
+	fi	
     else	
 	cp $WORKDIR/patches/KernelSU/Backport/hook_patches_ksu-$KERNEL_VER.patch $KERNEL_DIR/
     	cd $KERNEL_DIR && patch -p1 < hook_patches_ksu-$KERNEL_VER.patch
@@ -162,6 +176,7 @@ elif
     else
     	echo "CONFIG_KSU=y" >> $DEVICE_DEFCONFIG_FILE
 	echo "CONFIG_KSU_EXTRAS=y" >> $DEVICE_DEFCONFIG_FILE
+	echo "CONFIG_KSU_THRONE_TRACKER_ALWAYS_THREADED=y" >> $DEVICE_DEFCONFIG_FILE
 	if [[ $KERNELSU_REPO != "backslashxx/KernelSU" ]]; then
     	    echo "CONFIG_KPROBES=n" >> $DEVICE_DEFCONFIG_FILE # it will conflict with KSU hooks if it's on
 	    echo "CONFIG_KSU_SUSFS=y" >> $DEVICE_DEFCONFIG_FILE
