@@ -22,6 +22,15 @@ has_kprobes() {
     return 1
 }
 
+# Check for rejects
+check_patch_rejects() {
+    if find "$KERNEL_DIR" -name "*.rej" -print -quit | grep -q .; then
+        echo "ERROR: Patch application failed! Reject files found:"
+        find "$KERNEL_DIR" -name "*.rej" -exec echo "  {}" \;
+        exit 1
+    fi
+}
+
 # Avoid dirty uname
 touch $KERNEL_DIR/.scmversion
 
@@ -203,3 +212,5 @@ if [[ $KSU_ENABLED == "false" ]]; then
     SUSFS_VERSION="Disabled"
     sed -i "s/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION=\"-$KERNEL_BRANCH-$KERNEL_NAME\"/" $DEVICE_DEFCONFIG_FILE
 fi
+
+check_patch_rejects
