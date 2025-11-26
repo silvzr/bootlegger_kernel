@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 KERNELSU_DIR=$(find $KERNEL_DIR -mindepth 0 -maxdepth 4 \( -iname "ksu" -o -iname "kernelsu" \) -type d ! -path "*/.git/*" | cut -c3-)
-KERNELSU_GITMODULE=$(grep -i "KernelSU" $KERNEL_DIR/.gitmodules)
+KERNELSU_GITMODULE=$(grep -i "KernelSU" $KERNEL_DIR/.gitmodules || true)
 
 # Compare kernel versions in order to apply the correct patches
 version_le() {
