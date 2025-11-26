@@ -31,8 +31,8 @@ COMMON_DEFCONFIG=""
 DEVICE_ARCH="arch/arm64"
 
 # Clang
-CLANG_REPO="crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r547379"
-CLANG_BRANCH="15.0"
+CLANG_REPO="bachnxuan/aosp_clang_mirror"
+CLANG_VERSION="latest"
 
 # ------------------------------------------------------------
 
@@ -86,6 +86,11 @@ fi
 # Set variables
 WORKDIR="$(pwd)"
 
+if [[ $CLANG_VERSION == "latest" ]]; then
+    CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/latest | grep "browser_download_url.*tar.gz" | cut -d '"' -f 4)"
+else 
+    CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/tags/$CLANG_VERSION | grep "browser_download_url.*tar.gz" | cut -d '"' -f 4)"
+fi
 CLANG_DIR="$WORKDIR/Clang/bin"
 
 KERNEL_REPO="${KERNEL_GIT::-4}/"
@@ -93,7 +98,7 @@ KERNEL_SOURCE="${KERNEL_REPO::-1}/tree/$KERNEL_BRANCH"
 KERNEL_DIR="$WORKDIR/$KERNEL_NAME"
 
 KERNELSU_SOURCE="https://github.com/$KERNELSU_REPO"
-CLANG_SOURCE="https://gitlab.com/$CLANG_REPO"
+CLANG_SOURCE="https://github.com/$CLANG_REPO"
 README="https://github.com/silvzr/bootlegger_kernel_archive/blob/master/README.md"
 
 if [[ ! -z "$COMMON_DEFCONFIG" ]]; then
@@ -131,7 +136,10 @@ KERNEL_PID=$!
 
 # Clang
 (
-    git clone --depth=1 $CLANG_SOURCE --single-branch -b $CLANG_BRANCH Clang
+    mkdir -p Clang
+    aria2c -s16 -x16 -k1M $CLANG_DLINK -o Clang.tar.gz
+    tar -C Clang/ -zxf Clang.tar.gz
+    rm -rf Clang.tar.gz
 ) &
 CLANG_PID=$!
 
