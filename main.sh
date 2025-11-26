@@ -120,22 +120,22 @@ cd $WORKDIR
 
 # Setup
 msg "Setup"
+git config --global http.postBuffer 524288000
 
 msg "Cloning Clang and Kernel in parallel..."
-# Clang
-(
-    git config --global http.postBuffer 524288000
-    git clone --depth=1 $CLANG_SOURCE --single-branch -b $CLANG_BRANCH Clang
-) &
-CLANG_PID=$!
-
 # Kernel
 (
     git clone --depth=1 $KERNEL_GIT --single-branch -b $KERNEL_BRANCH $KERNEL_DIR
 ) &
 KERNEL_PID=$!
 
-wait $CLANG_PID $KERNEL_PID
+# Clang
+(
+    git clone --depth=1 $CLANG_SOURCE --single-branch -b $CLANG_BRANCH Clang
+) &
+CLANG_PID=$!
+
+wait $KERNEL_PID $CLANG_PID
 msg "Clone completed"
 
 CLANG_VERSION="$("$CLANG_DIR/clang" --version 2>&1 | sed -nE '1{s/.clang version ([0-9]+(.[0-9]+){1,}).(based on [^)])./\1 (\2)/p}')"
