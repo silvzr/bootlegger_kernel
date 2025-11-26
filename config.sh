@@ -40,7 +40,7 @@ if [[ $KSU_ENABLED == "true" ]] && [[ ! -z "$KERNELSU_DIR" ]]; then
 
     if version_le "$KERNEL_VER" "5.9"; then
         cp $WORKDIR/patches/KernelSU/Backport/revert_backport_path_umount.patch $KERNEL_DIR/
-        cd $KERNEL_DIR && patch -p1 < revert_backport_path_umount.patch
+        cd $KERNEL_DIR && patch -p1 < revert_backport_path_umount.patch || true
         msg "Fixing possible path_umount conflicts..."
 
         if [[ ! -f "$WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/add_susfs_in_kernel-$KERNEL_VER.patch" ]]; then
