@@ -139,14 +139,19 @@ elif
     fi
 
     if [[ $KERNELSU_REPO == "backslashxx/KernelSU" ]]; then
-    	cp $WORKDIR/patches/KernelSU/Backport/hook_patches_xxksu-$KERNEL_VER.patch $KERNEL_DIR/
-    	cd $KERNEL_DIR && patch -p1 -F 3 < hook_patches_xxksu-$KERNEL_VER.patch
-    	msg "Importing scope minimized KSU hooks for $KERNEL_VER kernel..."
+	if version_le "$KERNEL_VER" "5.4"; then
+	    echo "CONFIG_KSU_TAMPER_SYSCALL_TABLE=y" >> $DEVICE_DEFCONFIG_FILE
+	    msg "Enabling syscall tampering since $KERNEL_VER kernel is supported..."
+	else
+    	    cp $WORKDIR/patches/KernelSU/Backport/hook_patches_xxksu-$KERNEL_VER.patch $KERNEL_DIR/
+    	    cd $KERNEL_DIR && patch -p1 -F 3 < hook_patches_xxksu-$KERNEL_VER.patch
+    	    msg "Importing scope minimized KSU hooks for $KERNEL_VER kernel..."
 
-	if ! has_kprobes; then
-    	    cp $WORKDIR/patches/KernelSU/Backport/hook_patches_xxksu_extras-$KERNEL_VER.patch $KERNEL_DIR/
-    	    cd $KERNEL_DIR && patch -p1 -F 3 < hook_patches_xxksu_extras-$KERNEL_VER.patch
-    	    msg "Kprobes disabled! Adding other necessary hooks for $KERNEL_VER kernel..."
+	    if ! has_kprobes; then
+    	        cp $WORKDIR/patches/KernelSU/Backport/hook_patches_xxksu_extras-$KERNEL_VER.patch $KERNEL_DIR/
+    	        cd $KERNEL_DIR && patch -p1 -F 3 < hook_patches_xxksu_extras-$KERNEL_VER.patch
+    	        msg "Kprobes disabled! Adding other necessary hooks for $KERNEL_VER kernel..."
+	    fi
 	fi	
     else	
 	cp $WORKDIR/patches/KernelSU/Backport/hook_patches_ksu-$KERNEL_VER.patch $KERNEL_DIR/
@@ -176,7 +181,6 @@ elif
     else
     	echo "CONFIG_KSU=y" >> $DEVICE_DEFCONFIG_FILE
 	echo "CONFIG_KSU_EXTRAS=y" >> $DEVICE_DEFCONFIG_FILE
-	echo "CONFIG_KSU_THRONE_TRACKER_ALWAYS_THREADED=y" >> $DEVICE_DEFCONFIG_FILE
 	if [[ $KERNELSU_REPO != "backslashxx/KernelSU" ]]; then
     	    echo "CONFIG_KPROBES=n" >> $DEVICE_DEFCONFIG_FILE # it will conflict with KSU hooks if it's on
 	    echo "CONFIG_KSU_SUSFS=y" >> $DEVICE_DEFCONFIG_FILE
