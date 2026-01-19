@@ -44,7 +44,9 @@ if [[ $KERNEL_VER == "4.14" ]] && [[ "$KERNEL_SUBLEVEL" -ge 337 ]]; then
     msg "Fixing K/Apatch issues caused by OpenELA..."
 fi
 
+###
 msg "KernelSU"
+###
 if [[ $KSU_ENABLED == "true" ]] && [[ ! -z "$KERNELSU_DIR" ]]; then
     if [[ ! -z "$KERNELSU_GITMODULE" ]]; then
         cd $KERNEL_DIR && git submodule init && git submodule update
@@ -114,8 +116,8 @@ if [[ $KSU_ENABLED == "true" ]] && [[ ! -z "$KERNELSU_DIR" ]]; then
     msg "KernelSU Version: $KERNELSU_VERSION"
     msg "SuSFS version: $SUSFS_VERSION"
     sed -i "s/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION=\"-$KERNEL_BRANCH-$KERNEL_NAME-κsu\"/" $DEVICE_DEFCONFIG_FILE
-elif
-   [[ $KSU_ENABLED == "true" ]]; then
+    
+elif [[ $KSU_ENABLED == "true" ]] && [[ -z "$KERNELSU_DIR" ]]; then
     if [[ $KERNELSU_REPO == "backslashxx/KernelSU" ]]; then
     	cd $KERNEL_DIR && curl -LSs "https://raw.githubusercontent.com/$KERNELSU_REPO/$KERNELSU_BRANCH/kernel/setup.sh" | bash -s $latest_tag
     else
@@ -209,8 +211,8 @@ elif
     	msg "SuSFS version: $SUSFS_VERSION"
     fi
     sed -i "s/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION=\"-$KERNEL_BRANCH-$KERNEL_NAME-κsu\"/" $DEVICE_DEFCONFIG_FILE
-fi
-if [[ $KSU_ENABLED == "false" ]]; then
+
+elif [[ $KSU_ENABLED == "false" ]]; then
     echo "KernelSU Disabled"
     cd $KERNEL_DIR
     echo "CONFIG_KSU=n" >> $DEVICE_DEFCONFIG_FILE
