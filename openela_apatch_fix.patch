@@ -1,0 +1,25 @@
+From e987689a7a9d554f4f8a987a056af95e73d8a1c8 Mon Sep 17 00:00:00 2001
+From: Jbub5 <133902109+Jbub5@users.noreply.github.com>
+Date: Sat, 1 Mar 2025 20:38:36 +0300
+Subject: [PATCH] cred: Add fix for APatch
+
+This commit fixes https://github.com/bmax121/APatch/issues/400
+This problem was caused by https://github.com/openela/kernel-lts/commit/eac54659ff77706569a8419510ca6676b6ff9827
+
+This problem can also be solved by reverting that problematic OpenELA commit. Compared to that method, this one requires fewer code edits and does not interfere with backports required for KermelSU forks for non-GKI kernels.
+---
+ include/linux/cred.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index 6eb679e62a15..581bb53d3f8f 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -29,6 +29,7 @@ struct inode;
+  */
+ struct group_info {
+ 	atomic_t	usage;
++	u32 _padding; // Fix for https://github.com/bmax121/APatch/issues/400
+ 	int		ngroups;
+ 	kgid_t		gid[0];
+ } __randomize_layout;

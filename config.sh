@@ -8,6 +8,10 @@ version_le() {
     [ "$(printf '%s\n' "$1" "$2" | sort -V | head -n1)" = "$1" ]
 }
 
+# Grab the kernel sublevel from Makefile
+KERNEL_SUBLEVEL=$(grep -m1 '^SUBLEVEL\s*=\s*' "$KERNEL_DIR/Makefile" | awk -F '=' '{gsub(/ /,""); print $2}')
+KERNEL_SUBLEVEL=${KERNEL_SUBLEVEL:-0}
+
 # Obtain latest release tag for KSU bashing
 latest_tag="$(
   curl -s "https://api.github.com/repos/$KERNELSU_REPO/releases/latest" \
@@ -25,10 +29,19 @@ has_kprobes() {
 # Avoid dirty uname
 touch $KERNEL_DIR/.scmversion
 
-if [[ $KERNEL_VER == "4.14" ]]; then
+# 4.14 specific patches
+if [[ $KERNEL_VER == "4.14" ]] && grep -q "openela" "$KERNEL_DIR/Makefile"; then
     cp $WORKDIR/patches/strip_out_extraversion.patch $KERNEL_DIR/
     cd $KERNEL_DIR && patch -p1 < strip_out_extraversion.patch
-    msg "4.14 detected! Removing openela tag..."
+    msg "OpenELA kernel detected! Stripping extraversion..."
+elif [[ $KERNEL_VER == "4.14" ]]; then
+    msg "4.14 kernel detected but OpenELA tag not found; skipping extraversion cleanup..."
+fi
+
+if [[ $KERNEL_VER == "4.14" ]] && [[ "$KERNEL_SUBLEVEL" -ge 337 ]]; then
+    cp $WORKDIR/patches/openela_apatch_fix.patch $KERNEL_DIR/
+    cd $KERNEL_DIR && patch -p1 < openela_apatch_fix.patch
+    msg "Fixing K/Apatch issues caused by OpenELA..."
 fi
 
 msg "KernelSU"
