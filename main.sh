@@ -14,7 +14,7 @@ KERNEL_BRANCH=""
 # KernelSU
 KERNELSU_REPO="backslashxx/KernelSU"
 KERNELSU_BRANCH="master"
-KSU_ENABLED="false"
+KSU_ENABLED="true"
 
 # KernelSU Custom Manager
 MANAGER_EXPECTED_SIZE=""
