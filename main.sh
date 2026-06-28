@@ -31,7 +31,7 @@ COMMON_DEFCONFIG=""
 DEVICE_ARCH="arch/arm64"
 
 # Clang
-CLANG_REPO="bachnxuan/aosp_clang_mirror"
+CLANG_REPO="Neutron-Toolchains/clang-build-catalogue"
 CLANG_VERSION="latest"
 
 # ------------------------------------------------------------
@@ -86,10 +86,18 @@ fi
 # Set variables
 WORKDIR="$(pwd)"
 
-if [[ $CLANG_VERSION == "latest" ]]; then
-    CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/latest | grep "browser_download_url.*tar.gz" | cut -d '"' -f 4)"
-else 
-    CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/tags/$CLANG_VERSION | grep "browser_download_url.*tar.gz" | cut -d '"' -f 4)"
+if [[ $CLANG_REPO == "Neutron-Toolchains/clang-build-catalogue" ]]; then
+    if [[ $CLANG_VERSION == "latest" ]]; then
+        CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/latest | grep "browser_download_url.*tar.zst" | cut -d '"' -f 4)"
+    else 
+        CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/tags/$CLANG_VERSION | grep "browser_download_url.*tar.zst" | cut -d '"' -f 4)"
+    fi
+else
+    if [[ $CLANG_VERSION == "latest" ]]; then
+        CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/latest | grep "browser_download_url.*tar.gz" | cut -d '"' -f 4)"
+    else 
+        CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/tags/$CLANG_VERSION | grep "browser_download_url.*tar.gz" | cut -d '"' -f 4)"
+    fi
 fi
 CLANG_DIR="$WORKDIR/Clang/bin"
 
@@ -138,7 +146,7 @@ KERNEL_PID=$!
 (
     mkdir -p Clang
     aria2c -s16 -x16 -k1M $CLANG_DLINK -o Clang.tar.gz
-    tar -C Clang/ -zxf Clang.tar.gz
+    tar -C Clang/ -xf Clang.tar.gz
     rm -rf Clang.tar.gz
 ) &
 CLANG_PID=$!
