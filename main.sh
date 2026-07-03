@@ -47,10 +47,10 @@ fi
 
 if [[ $2 == "true" ]]; then
     KSU_MANAGER="true"
-	echo "Input changed KSU_MANAGER to true"
+    echo "Input changed KSU_MANAGER to true"
 elif [[ $2 == "false" ]]; then
     KSU_MANAGER="false"
-	echo "Input changed KSU_MANAGER to false"
+    echo "Input changed KSU_MANAGER to false"
 fi
 
 if [[ $3 == *.git ]]; then
@@ -65,7 +65,7 @@ fi
 
 if [[ $5 == *.git ]]; then
     ANYKERNEL3_GIT=$5
-    echo "Input changed KERNEL_GIT to $5"
+    echo "Input changed ANYKERNEL3_GIT to $5"
 fi
 
 if [[ $6 ]]; then
@@ -124,9 +124,9 @@ export KBUILD_BUILD_HOST=GitHubCI
 
 # Highlight
 msg() {
-	echo
-	echo -e "\e[1;33m$*\e[0m"
-	echo
+    echo
+    echo -e "\e[1;33m$*\e[0m"
+    echo
 }
 
 cd $WORKDIR
@@ -187,7 +187,7 @@ LLVM_IAS=1"
 rm -rf out
 make O=out $args $DEVICE_DEFCONFIG
 if [[ ! -z "$COMMON_DEFCONFIG" ]]; then
-  make O=out $args $COMMON_DEFCONFIG
+    make O=out $args $COMMON_DEFCONFIG
 fi
 make O=out $args kernelversion
 make O=out $args -j"$(nproc --all)"
@@ -218,9 +218,9 @@ cp $DTBO .
 # Archive
 mkdir -p $WORKDIR/out
 if [[ $KSU_ENABLED == "true" ]]; then
-  ZIP_NAME="$KERNEL_NAME-$KERNEL_VERSION-$KERNEL_BRANCH-KSU.zip"
+    ZIP_NAME="$KERNEL_NAME-$KERNEL_VERSION-$KERNEL_BRANCH-KSU.zip"
 else
-  ZIP_NAME="$KERNEL_NAME-$KERNEL_VERSION-$KERNEL_BRANCH-NonKSU.zip"
+    ZIP_NAME="$KERNEL_NAME-$KERNEL_VERSION-$KERNEL_BRANCH-NonKSU.zip"
 fi
 TIME=$(TZ='Europe/Berlin' date +"%Y-%m-%d %H:%M:%S")
 find ./ * -exec touch -m -d "$TIME" {} \;
