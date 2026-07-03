@@ -14,8 +14,8 @@ KERNEL_SUBLEVEL=${KERNEL_SUBLEVEL:-0}
 
 # Obtain latest release tag for KSU bashing
 latest_tag="$(
-  curl -s "https://api.github.com/repos/$KERNELSU_REPO/releases/latest" \
-  | jq -r '.tag_name'
+    curl -s "https://api.github.com/repos/$KERNELSU_REPO/releases/latest" \
+    | jq -r '.tag_name'
 )"
 
 # Determine if kernel has enabled kprobes or not
@@ -51,7 +51,7 @@ if [[ $KSU_ENABLED == "true" ]] && [[ ! -z "$KERNELSU_DIR" ]]; then
     if [[ ! -z "$KERNELSU_GITMODULE" ]]; then
         cd $KERNEL_DIR && git submodule init && git submodule update
         msg "KernelSU submodule detected! Cloning..."
-    fi    
+    fi
 
     if version_le "$KERNEL_VER" "5.9"; then
         cp $WORKDIR/patches/KernelSU/Backport/revert_backport_path_umount.patch $KERNEL_DIR/
@@ -59,46 +59,46 @@ if [[ $KSU_ENABLED == "true" ]] && [[ ! -z "$KERNELSU_DIR" ]]; then
         msg "Fixing possible path_umount conflicts..."
 
         if [[ ! -f "$WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/add_susfs_in_kernel-$KERNEL_VER.patch" ]]; then
-    	    cp $WORKDIR/patches/KernelSU/Backport/backport_path_umount.patch $KERNEL_DIR/
+            cp $WORKDIR/patches/KernelSU/Backport/backport_path_umount.patch $KERNEL_DIR/
             cd $KERNEL_DIR && patch -p1 < backport_path_umount.patch
             msg "Backporting path_umount from 5.10.9..."
         fi
     fi
 
     if [[ ! -z "$MANAGER_EXPECTED_SIZE" ]] && [[ ! -z "$MANAGER_EXPECTED_HASH" ]]; then
-	cd $KERNEL_DIR/$KERNELSU_DIR
+        cd $KERNEL_DIR/$KERNELSU_DIR
         if [[ -d "$KERNEL_DIR/$KERNELSU_DIR/kernel" ]]; then
-	    sed -i '/return check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH);/c\
-            \    return (check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH) || check_v2_signature(path, '"$MANAGER_EXPECTED_SIZE"', "'"$MANAGER_EXPECTED_HASH"'"));' kernel/apk_sign.c
+            sed -i '/return check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH);/c\
+                \    return (check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH) || check_v2_signature(path, '"$MANAGER_EXPECTED_SIZE"', "'"$MANAGER_EXPECTED_HASH"'"));' kernel/apk_sign.c
         else
-	    sed -i '/return check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH);/c\
-            \    return (check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH) || check_v2_signature(path, '"$MANAGER_EXPECTED_SIZE"', "'"$MANAGER_EXPECTED_HASH"'"));' apk_sign.c
+            sed -i '/return check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH);/c\
+                \    return (check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH) || check_v2_signature(path, '"$MANAGER_EXPECTED_SIZE"', "'"$MANAGER_EXPECTED_HASH"'"));' apk_sign.c
         fi
-	msg "KSU_EXPECTED_SIZE := $MANAGER_EXPECTED_SIZE"
+        msg "KSU_EXPECTED_SIZE := $MANAGER_EXPECTED_SIZE"
         msg "KSU_EXPECTED_HASH := $MANAGER_EXPECTED_HASH"
     fi
 
     cp $WORKDIR/patches/KernelSU/Backport/safe_mode_ksu.patch $KERNEL_DIR/
     cd $KERNEL_DIR && patch -p1 < safe_mode_ksu.patch
     msg "Backporting KSU safe mode..."
-    
+
     if [[ ! -f "$KERNEL_DIR/fs/susfs.c" || ! -f "$KERNEL_DIR/include/linux/susfs.h" ]]; then
         if [[ -d "$KERNEL_DIR/$KERNELSU_DIR/kernel" ]]; then
-    	    cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/enable_susfs_for_ksu_auto.patch $KERNEL_DIR/$KERNELSU_DIR/
-    	    cd $KERNEL_DIR/$KERNELSU_DIR && patch -p1 -F 3 < enable_susfs_for_ksu_auto.patch
+            cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/enable_susfs_for_ksu_auto.patch $KERNEL_DIR/$KERNELSU_DIR/
+            cd $KERNEL_DIR/$KERNELSU_DIR && patch -p1 -F 3 < enable_susfs_for_ksu_auto.patch
         else
-    	    cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/enable_susfs_for_ksu_manual.patch $KERNEL_DIR/$KERNELSU_DIR/
+            cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/enable_susfs_for_ksu_manual.patch $KERNEL_DIR/$KERNELSU_DIR/
             cd $KERNEL_DIR/$KERNELSU_DIR && patch -p1 -F 3 < enable_susfs_for_ksu_manual.patch
         fi
-    	msg "Importing SuSFS into KSU source..."
+        msg "Importing SuSFS into KSU source..."
 
         cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/add_susfs_in_kernel-$KERNEL_VER.patch $KERNEL_DIR/
-    	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/susfs.c $KERNEL_DIR/fs/
-    	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/susfs.h $KERNEL_DIR/include/linux/
-	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/sus_su.c $KERNEL_DIR/fs/
-	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/sus_su.h $KERNEL_DIR/include/linux/
-    	cd $KERNEL_DIR && patch -p1 -F 3 < add_susfs_in_kernel-$KERNEL_VER.patch
-    	msg "Importing SuSFS for $KERNEL_VER kernel..."
+        cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/susfs.c $KERNEL_DIR/fs/
+        cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/susfs.h $KERNEL_DIR/include/linux/
+        cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/sus_su.c $KERNEL_DIR/fs/
+        cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/sus_su.h $KERNEL_DIR/include/linux/
+        cd $KERNEL_DIR && patch -p1 -F 3 < add_susfs_in_kernel-$KERNEL_VER.patch
+        msg "Importing SuSFS for $KERNEL_VER kernel..."
     fi
 
     cd $KERNEL_DIR
@@ -111,22 +111,22 @@ if [[ $KSU_ENABLED == "true" ]] && [[ ! -z "$KERNELSU_DIR" ]]; then
     else
         KERNELSU_VERSION=$(cat $KERNELSU_DIR/ksu.h | grep "KERNEL_SU_VERSION" | cut -c26-)
     fi
-    
+
     SUSFS_VERSION=$(grep "SuSFS version:" $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/add_susfs_in_kernel-$KERNEL_VER.patch | cut -d' ' -f3)
     msg "KernelSU Version: $KERNELSU_VERSION"
     msg "SuSFS version: $SUSFS_VERSION"
     sed -i "s/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION=\"-$KERNEL_BRANCH-$KERNEL_NAME-κsu\"/" $DEVICE_DEFCONFIG_FILE
-    
+
 elif [[ $KSU_ENABLED == "true" ]] && [[ -z "$KERNELSU_DIR" ]]; then
     if [[ $KERNELSU_REPO == "backslashxx/KernelSU" ]]; then
-    	cd $KERNEL_DIR && curl -LSs "https://raw.githubusercontent.com/$KERNELSU_REPO/$KERNELSU_BRANCH/kernel/setup.sh" | bash -s $latest_tag
+        cd $KERNEL_DIR && curl -LSs "https://raw.githubusercontent.com/$KERNELSU_REPO/$KERNELSU_BRANCH/kernel/setup.sh" | bash -s $latest_tag
     else
-	cd $KERNEL_DIR && curl -LSs "https://raw.githubusercontent.com/$KERNELSU_REPO/$KERNELSU_BRANCH/kernel/setup.sh" | bash -s $KERNELSU_BRANCH
+        cd $KERNEL_DIR && curl -LSs "https://raw.githubusercontent.com/$KERNELSU_REPO/$KERNELSU_BRANCH/kernel/setup.sh" | bash -s $KERNELSU_BRANCH
     fi
 
     if version_le "$KERNEL_VER" "5.9"; then
         if [[ ! -f "$WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/add_susfs_in_kernel-$KERNEL_VER.patch" ]]; then
-    	    cp $WORKDIR/patches/KernelSU/Backport/backport_path_umount.patch $KERNEL_DIR/
+            cp $WORKDIR/patches/KernelSU/Backport/backport_path_umount.patch $KERNEL_DIR/
             cd $KERNEL_DIR && patch -p1 < backport_path_umount.patch
             msg "Backporting path_umount from 5.10.9..."
         fi
@@ -134,72 +134,72 @@ elif [[ $KSU_ENABLED == "true" ]] && [[ -z "$KERNELSU_DIR" ]]; then
         # cd $KERNEL_DIR/KernelSU && git revert 898e9d4f8ca9b2f46b0c6b36b80a872b5b88d899
         # msg "Readding support for Non GKI kernels..."
 
-	if [[ $KSU_MANAGER == "true" ]]; then
-	    cd $WORKDIR/out/manager && wget -q https://nightly.link/tiann/KernelSU/workflows/build-manager/main/ksud-x86_64-unknown-linux-musl.zip
-	    unzip ksud-x86_64-unknown-linux-musl.zip && mv x86_64-unknown-linux-musl/release/* .
-	    mv *.apk manager.apk && chmod +x ksud
-	    MANAGER_SIGNATURE=$(./ksud debug get-sign manager.apk)
-	    MANAGER_EXPECTED_SIZE=$(echo "$MANAGER_SIGNATURE" | grep 'size:' | sed 's/.*size: //; s/,.*//')
-	    MANAGER_EXPECTED_HASH=$(echo "$MANAGER_SIGNATURE" | grep 'hash:' | sed 's/.*hash: //; s/,.*//')
+        if [[ $KSU_MANAGER == "true" ]]; then
+            cd $WORKDIR/out/manager && wget -q https://nightly.link/tiann/KernelSU/workflows/build-manager/main/ksud-x86_64-unknown-linux-musl.zip
+            unzip ksud-x86_64-unknown-linux-musl.zip && mv x86_64-unknown-linux-musl/release/* .
+            mv *.apk manager.apk && chmod +x ksud
+            MANAGER_SIGNATURE=$(./ksud debug get-sign manager.apk)
+            MANAGER_EXPECTED_SIZE=$(echo "$MANAGER_SIGNATURE" | grep 'size:' | sed 's/.*size: //; s/,.*//')
+            MANAGER_EXPECTED_HASH=$(echo "$MANAGER_SIGNATURE" | grep 'hash:' | sed 's/.*hash: //; s/,.*//')
             msg "Backporting latest KSU manager..."
-	fi
+        fi
     fi
 
     if [[ ! -z "$MANAGER_EXPECTED_SIZE" ]] && [[ ! -z "$MANAGER_EXPECTED_HASH" ]]; then
-	cd $KERNEL_DIR/KernelSU
-	sed -i '/return check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH);/c\
-        \    return (check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH) || check_v2_signature(path, '"$MANAGER_EXPECTED_SIZE"', "'"$MANAGER_EXPECTED_HASH"'"));' kernel/apk_sign.c
-	msg "KSU_EXPECTED_SIZE := $MANAGER_EXPECTED_SIZE"
+        cd $KERNEL_DIR/KernelSU
+        sed -i '/return check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH);/c\
+            \    return (check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH) || check_v2_signature(path, '"$MANAGER_EXPECTED_SIZE"', "'"$MANAGER_EXPECTED_HASH"'"));' kernel/apk_sign.c
+        msg "KSU_EXPECTED_SIZE := $MANAGER_EXPECTED_SIZE"
         msg "KSU_EXPECTED_HASH := $MANAGER_EXPECTED_HASH" && cd $WORKDIR
     fi
 
     if [[ $KERNELSU_REPO == "backslashxx/KernelSU" ]]; then
         if version_le "$KERNEL_VER" "5.4"; then
-    	    echo "CONFIG_KSU_TAMPER_SYSCALL_TABLE=y" >> $DEVICE_DEFCONFIG_FILE
-    	    msg "Enabling syscall tampering since $KERNEL_VER kernel is supported..."
+            echo "CONFIG_KSU_TAMPER_SYSCALL_TABLE=y" >> $DEVICE_DEFCONFIG_FILE
+            msg "Enabling syscall tampering since $KERNEL_VER kernel is supported..."
         else
-    	    cp $WORKDIR/patches/KernelSU/Backport/hook_patches_xxksu-$KERNEL_VER.patch $KERNEL_DIR/
-    	    cd $KERNEL_DIR && patch -p1 -F 3 < hook_patches_xxksu-$KERNEL_VER.patch
-    	    msg "Importing scope minimized KSU hooks for $KERNEL_VER kernel..."
+            cp $WORKDIR/patches/KernelSU/Backport/hook_patches_xxksu-$KERNEL_VER.patch $KERNEL_DIR/
+            cd $KERNEL_DIR && patch -p1 -F 3 < hook_patches_xxksu-$KERNEL_VER.patch
+            msg "Importing scope minimized KSU hooks for $KERNEL_VER kernel..."
 
-	    if ! has_kprobes; then
-    	        cp $WORKDIR/patches/KernelSU/Backport/hook_patches_xxksu_extras-$KERNEL_VER.patch $KERNEL_DIR/
-    	        cd $KERNEL_DIR && patch -p1 -F 3 < hook_patches_xxksu_extras-$KERNEL_VER.patch
-    	        msg "Kprobes disabled! Adding other necessary hooks for $KERNEL_VER kernel..."
-	    fi
-	fi	
-    else	
-	cp $WORKDIR/patches/KernelSU/Backport/hook_patches_ksu-$KERNEL_VER.patch $KERNEL_DIR/
-    	cd $KERNEL_DIR && patch -p1 < hook_patches_ksu-$KERNEL_VER.patch
-    	msg "Importing KSU hooks for $KERNEL_VER kernel..."
+            if ! has_kprobes; then
+                cp $WORKDIR/patches/KernelSU/Backport/hook_patches_xxksu_extras-$KERNEL_VER.patch $KERNEL_DIR/
+                cd $KERNEL_DIR && patch -p1 -F 3 < hook_patches_xxksu_extras-$KERNEL_VER.patch
+                msg "Kprobes disabled! Adding other necessary hooks for $KERNEL_VER kernel..."
+            fi
+        fi
+    else
+        cp $WORKDIR/patches/KernelSU/Backport/hook_patches_ksu-$KERNEL_VER.patch $KERNEL_DIR/
+        cd $KERNEL_DIR && patch -p1 < hook_patches_ksu-$KERNEL_VER.patch
+        msg "Importing KSU hooks for $KERNEL_VER kernel..."
 
-    	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/enable_susfs_for_ksu_auto.patch $KERNEL_DIR/KernelSU/
-    	cd $KERNEL_DIR/KernelSU && patch -p1 -F 3 < enable_susfs_for_ksu_auto.patch
-    	msg "Importing SuSFS into KSU source..."
+        cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/enable_susfs_for_ksu_auto.patch $KERNEL_DIR/KernelSU/
+        cd $KERNEL_DIR/KernelSU && patch -p1 -F 3 < enable_susfs_for_ksu_auto.patch
+        msg "Importing SuSFS into KSU source..."
 
-    	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/add_susfs_in_kernel-$KERNEL_VER.patch $KERNEL_DIR/
-    	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/susfs.c $KERNEL_DIR/fs/
-    	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/susfs.h $KERNEL_DIR/include/linux/
-    	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/sus_su.c $KERNEL_DIR/fs/
-    	cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/sus_su.h $KERNEL_DIR/include/linux/
-    	cd $KERNEL_DIR && patch -p1 -F 3 < add_susfs_in_kernel-$KERNEL_VER.patch 
-    	msg "Importing SuSFS into $KERNEL_VER kernel..." && touch .susfs_patched
+        cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/add_susfs_in_kernel-$KERNEL_VER.patch $KERNEL_DIR/
+        cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/susfs.c $KERNEL_DIR/fs/
+        cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/susfs.h $KERNEL_DIR/include/linux/
+        cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/sus_su.c $KERNEL_DIR/fs/
+        cp $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/sus_su.h $KERNEL_DIR/include/linux/
+        cd $KERNEL_DIR && patch -p1 -F 3 < add_susfs_in_kernel-$KERNEL_VER.patch 
+        msg "Importing SuSFS into $KERNEL_VER kernel..." && touch .susfs_patched
     fi
 
     cd $KERNEL_DIR
     if [[ ! -f "$WORKDIR/patches/KernelSU/Backport/hook_patches_ksu-$KERNEL_VER.patch" ]]; then
-	echo "CONFIG_KPROBES=y" >> $DEVICE_DEFCONFIG_FILE
-	echo "CONFIG_HAVE_KPROBES=y" >> $DEVICE_DEFCONFIG_FILE
-	echo "CONFIG_KPROBE_EVENTS=y" >> $DEVICE_DEFCONFIG_FILE
-	echo "CONFIG_KSU_SUSFS=y" >> $DEVICE_DEFCONFIG_FILE
+        echo "CONFIG_KPROBES=y" >> $DEVICE_DEFCONFIG_FILE
+        echo "CONFIG_HAVE_KPROBES=y" >> $DEVICE_DEFCONFIG_FILE
+        echo "CONFIG_KPROBE_EVENTS=y" >> $DEVICE_DEFCONFIG_FILE
+        echo "CONFIG_KSU_SUSFS=y" >> $DEVICE_DEFCONFIG_FILE
         msg "Hook patches not found! Using kprobes..."
     else
-	echo "CONFIG_KSU=y" >> $DEVICE_DEFCONFIG_FILE
-	echo "CONFIG_KSU_THRONE_TRACKER_ALWAYS_THREADED=y" >> $DEVICE_DEFCONFIG_FILE
-	if [[ $KERNELSU_REPO != "backslashxx/KernelSU" ]]; then
-    	    echo "CONFIG_KPROBES=n" >> $DEVICE_DEFCONFIG_FILE # it will conflict with KSU hooks if it's on
-	    echo "CONFIG_KSU_SUSFS=y" >> $DEVICE_DEFCONFIG_FILE
-	fi
+        echo "CONFIG_KSU=y" >> $DEVICE_DEFCONFIG_FILE
+        echo "CONFIG_KSU_THRONE_TRACKER_ALWAYS_THREADED=y" >> $DEVICE_DEFCONFIG_FILE
+        if [[ $KERNELSU_REPO != "backslashxx/KernelSU" ]]; then
+            echo "CONFIG_KPROBES=n" >> $DEVICE_DEFCONFIG_FILE # it will conflict with KSU hooks if it's on
+            echo "CONFIG_KSU_SUSFS=y" >> $DEVICE_DEFCONFIG_FILE
+        fi
     fi
 
     KSU_GIT_VERSION=$(cd KernelSU && git rev-list --count HEAD)
@@ -207,8 +207,8 @@ elif [[ $KSU_ENABLED == "true" ]] && [[ -z "$KERNELSU_DIR" ]]; then
     msg "KernelSU Version: $KERNELSU_VERSION"
 
     if [[ -f "$KERNEL_DIR/.susfs_patched" ]]; then
-    	SUSFS_VERSION=$(grep "SuSFS version:" $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/add_susfs_in_kernel-$KERNEL_VER.patch | cut -d' ' -f3)
-    	msg "SuSFS version: $SUSFS_VERSION"
+        SUSFS_VERSION=$(grep "SuSFS version:" $WORKDIR/patches/KernelSU/SuSFS/$KERNEL_VER/add_susfs_in_kernel-$KERNEL_VER.patch | cut -d' ' -f3)
+        msg "SuSFS version: $SUSFS_VERSION"
     fi
     sed -i "s/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION=\"-$KERNEL_BRANCH-$KERNEL_NAME-κsu\"/" $DEVICE_DEFCONFIG_FILE
 
