@@ -32,71 +32,100 @@ DEVICE_ARCH="arch/arm64"
 
 # Clang
 CLANG_REPO="Neutron-Toolchains/clang-build-catalogue"
-CLANG_VERSION="latest"
+CLANG_TAG="latest"
+CLANG_ARGS="ARCH=arm64 \
+SUBARCH=arm64 \
+CROSS_COMPILE=aarch64-linux-gnu- \
+CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+CC=clang \
+LD=ld.lld \
+LLVM=1 \
+LLVM_IAS=1"
 
 # ------------------------------------------------------------
 
 # Input Variables
-if [[ $1 == "KSU" ]]; then
+if [[ ${1} == "KSU" ]]; then
     KSU_ENABLED="true"
     echo "Input changed KSU_ENABLED to true"
-elif [[ $1 == "NonKSU" ]]; then
+elif [[ ${1} == "NonKSU" ]]; then
     KSU_ENABLED="false"
     echo "Input changed KSU_ENABLED to false"
 fi
 
-if [[ $2 == "true" ]]; then
+if [[ ${2} == "true" ]]; then
     KSU_MANAGER="true"
     echo "Input changed KSU_MANAGER to true"
-elif [[ $2 == "false" ]]; then
+elif [[ ${2} == "false" ]]; then
     KSU_MANAGER="false"
     echo "Input changed KSU_MANAGER to false"
 fi
 
-if [[ $3 == *.git ]]; then
-    KERNEL_GIT=$3
-    echo "Input changed KERNEL_GIT to $3"
+if [[ ${3} ]]; then
+    CLANG_REPO=${3}
+    echo "Input changed CLANG_REPO to ${3}"
 fi
 
-if [[ $4 ]]; then
-    KERNEL_BRANCH=$4
-    echo "Input changed KERNEL_BRANCH to $4"
+if [[ ${4} ]]; then
+    CLANG_TAG=${4}
+    echo "Input changed CLANG_TAG to ${4}"
 fi
 
-if [[ $5 == *.git ]]; then
-    ANYKERNEL3_GIT=$5
-    echo "Input changed ANYKERNEL3_GIT to $5"
+if [[ ${5} ]]; then
+    CLANG_ARGS=${5}
+    echo "Input changed CLANG_ARGS to ${5}"
 fi
 
-if [[ $6 ]]; then
-    DEVICE_CODE=$6
-    echo "Input changed DEVICE_CODE to $6"
+if [[ ${6} == *.git ]]; then
+    KERNEL_GIT=${6}
+    echo "Input changed KERNEL_GIT to ${6}"
 fi
 
-if [[ $7 ]]; then
-    DEVICE_DEFCONFIG=$7
-    echo "Input changed DEVICE_DEFCONFIG to $7"
+if [[ ${7} ]]; then
+    KERNEL_BRANCH=${7}
+    echo "Input changed KERNEL_BRANCH to ${7}"
 fi
 
-if [[ $8 ]]; then
-    COMMON_DEFCONFIG=$8
-    echo "Input changed COMMON_DEFCONFIG to $8"
+if [[ ${8} == *.git ]]; then
+    ANYKERNEL3_GIT=${8}
+    echo "Input changed ANYKERNEL3_GIT to ${8}"
+fi
+
+if [[ ${9} ]]; then
+    ANYKERNEL3_BRANCH=${9}
+    echo "Input changed ANYKERNEL3_BRANCH to ${9}"
+fi
+
+if [[ ${10} ]]; then
+    DEVICE_CODE=${10}
+    echo "Input changed DEVICE_CODE to ${10}"
+fi
+
+if [[ ${11} ]]; then
+    DEVICE_DEFCONFIG=${11}
+    echo "Input changed DEVICE_DEFCONFIG to ${11}"
+fi
+
+if [[ ${12} ]]; then
+    COMMON_DEFCONFIG=${12}
+    echo "Input changed COMMON_DEFCONFIG to ${12}"
 fi
 
 # Set variables
 WORKDIR="$(pwd)"
 
 if [[ $CLANG_REPO == "Neutron-Toolchains/clang-build-catalogue" ]]; then
-    if [[ $CLANG_VERSION == "latest" ]]; then
+    if [[ $CLANG_TAG == "latest" ]]; then
         CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/latest | grep "browser_download_url.*tar.zst" | cut -d '"' -f 4)"
     else 
-        CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/tags/$CLANG_VERSION | grep "browser_download_url.*tar.zst" | cut -d '"' -f 4)"
+        CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/tags/$CLANG_TAG | grep "browser_download_url.*tar.zst" | cut -d '"' -f 4)"
     fi
 else
-    if [[ $CLANG_VERSION == "latest" ]]; then
+    if [[ $CLANG_TAG == "latest" ]]; then
         CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/latest | grep "browser_download_url.*tar.gz" | cut -d '"' -f 4)"
     else 
-        CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/tags/$CLANG_VERSION | grep "browser_download_url.*tar.gz" | cut -d '"' -f 4)"
+        CLANG_DLINK="$(curl -s https://api.github.com/repos/$CLANG_REPO/releases/tags/$CLANG_TAG | grep "browser_download_url.*tar.gz" | cut -d '"' -f 4)"
     fi
 fi
 CLANG_DIR="$WORKDIR/Clang/bin"
@@ -172,25 +201,13 @@ source ./patches/config.sh
 
 # Build
 msg "Build"
-
-args="PATH=$CLANG_DIR:$PATH \
-ARCH=arm64 \
-SUBARCH=arm64 \
-CROSS_COMPILE=aarch64-linux-gnu- \
-CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
-CC=clang \
-LD=ld.lld \
-LLVM=1 \
-LLVM_IAS=1"
-
 rm -rf out
-make O=out $args $DEVICE_DEFCONFIG
+PATH=$CLANG_DIR:$PATH make O=out $CLANG_ARGS $DEVICE_DEFCONFIG
 if [[ ! -z "$COMMON_DEFCONFIG" ]]; then
-    make O=out $args $COMMON_DEFCONFIG
+    PATH=$CLANG_DIR:$PATH make O=out $CLANG_ARGS $COMMON_DEFCONFIG
 fi
-make O=out $args kernelversion
-make O=out $args -j"$(nproc --all)"
+PATH=$CLANG_DIR:$PATH make O=out $CLANG_ARGS kernelversion
+PATH=$CLANG_DIR:$PATH make O=out $CLANG_ARGS -j"$(nproc --all)"
 msg "Kernel version: $KERNEL_VERSION"
 
 # Package

@@ -9,6 +9,15 @@ on:
       include_ksu_manager:
         required: true
         type: string
+      clang_repo:
+        required: true
+        type: string
+      clang_tag:
+        required: true
+        type: string
+      clang_args:
+        required: true
+        type: string
       kernel_git:
         required: true
         type: string
@@ -16,6 +25,9 @@ on:
         required: true
         type: string
       anykernel3_git:
+        required: true
+        type: string
+      anykernel3_branch:
         required: true
         type: string
       device_code:
@@ -60,7 +72,7 @@ jobs:
         id: build
         run: |
             echo "Building ${{ inputs.include_ksu }}"
-            sudo bash main.sh ${{ inputs.include_ksu }} ${{ inputs.include_ksu_manager }} ${{ inputs.kernel_git }} ${{ inputs.kernel_branch }} ${{ inputs.anykernel3_git }} ${{ inputs.device_code }} ${{ inputs.device_defconfig }} ${{ inputs.common_defconfig }}
+            sudo bash main.sh ${{ inputs.include_ksu }} ${{ inputs.include_ksu_manager }} ${{ inputs.clang_repo }} ${{ inputs.clang_tag }} '${{ inputs.clang_args }}' ${{ inputs.kernel_git }} ${{ inputs.kernel_branch }} ${{ inputs.anykernel3_git }} ${{ inputs.anykernel3_branch }} ${{ inputs.device_code }} ${{ inputs.device_defconfig }} ${{ inputs.common_defconfig }}
       - name: Prepare Upload
         id: prepare
         run: |

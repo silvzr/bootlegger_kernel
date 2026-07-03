@@ -15,6 +15,18 @@ on:
         required: true
         type: boolean
         default: false
+      Clang_Repo:
+        required: true
+        type: string
+        default: Neutron-Toolchains/clang-build-catalogue
+      Clang_Tag:
+        required: true
+        type: string
+        default: latest
+      Clang_Args:
+        required: true
+        type: string
+        default: "ARCH=arm64 SUBARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1"
       Kernel_Git:
         required: true
         type: string
@@ -22,11 +34,15 @@ on:
       Kernel_Branch:
         required: true
         type: string
-        default: pos14
+        default: pos16
       AnyKernel3_Git:
         required: true
         type: string
         default: https://github.com/silvzr/AnyKernel3.git
+      AnyKernel3_Branch:
+        required: true
+        type: string
+        default: master
       Device_Code:
         required: true
         type: string
@@ -56,9 +72,13 @@ jobs:
     with:
       include_ksu: "KSU"
       include_ksu_manager: ${{ inputs.KSU_Manager_Non_GKI }}
+      clang_repo: ${{ inputs.Clang_Repo }}
+      clang_tag: ${{ inputs.Clang_Tag }}
+      clang_args: ${{ inputs.Clang_Args }}
       kernel_git: ${{ inputs.Kernel_Git }}
       kernel_branch: ${{ inputs.Kernel_Branch }}
       anykernel3_git: ${{ inputs.AnyKernel3_Git }}
+      anykernel3_branch: ${{ inputs.AnyKernel3_Branch }}
       device_code: ${{ inputs.Device_Code }}
       device_defconfig: ${{ inputs.Device_Defconfig }}
       common_defconfig: ${{ inputs.Common_Defconfig }}
@@ -70,9 +90,13 @@ jobs:
     with:
       include_ksu: "NonKSU"
       include_ksu_manager: "false"
+      clang_repo: ${{ inputs.Clang_Repo }}
+      clang_tag: ${{ inputs.Clang_Tag }}
+      clang_args: ${{ inputs.Clang_Args }}
       kernel_git: ${{ inputs.Kernel_Git }}
       kernel_branch: ${{ inputs.Kernel_Branch }}
       anykernel3_git: ${{ inputs.AnyKernel3_Git }}
+      anykernel3_branch: ${{ inputs.AnyKernel3_Branch }}
       device_code: ${{ inputs.Device_Code }}
       device_defconfig: ${{ inputs.Device_Defconfig }}
       common_defconfig: ${{ inputs.Common_Defconfig }}
