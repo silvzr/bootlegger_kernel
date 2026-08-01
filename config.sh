@@ -154,20 +154,8 @@ elif [[ $KSU_ENABLED == "true" ]] && [[ -z "$KERNELSU_DIR" ]]; then
     fi
 
     if [[ $KERNELSU_REPO == "backslashxx/KernelSU" ]]; then
-        if version_le "$KERNEL_VER" "5.4"; then
-            echo "CONFIG_KSU_TAMPER_SYSCALL_TABLE=y" >> $DEVICE_DEFCONFIG_FILE
-            msg "Enabling syscall tampering since $KERNEL_VER kernel is supported..."
-        else
-            cp $WORKDIR/patches/KernelSU/Backport/hook_patches_xxksu-$KERNEL_VER.patch $KERNEL_DIR/
-            cd $KERNEL_DIR && patch -p1 -F 3 < hook_patches_xxksu-$KERNEL_VER.patch
-            msg "Importing scope minimized KSU hooks for $KERNEL_VER kernel..."
-
-            if ! has_kprobes; then
-                cp $WORKDIR/patches/KernelSU/Backport/hook_patches_xxksu_extras-$KERNEL_VER.patch $KERNEL_DIR/
-                cd $KERNEL_DIR && patch -p1 -F 3 < hook_patches_xxksu_extras-$KERNEL_VER.patch
-                msg "Kprobes disabled! Adding other necessary hooks for $KERNEL_VER kernel..."
-            fi
-        fi
+            echo "CONFIG_KSU_HACK_ARM64_BRANCH_LINK=y" >> $DEVICE_DEFCONFIG_FILE
+            msg "Enabling arm64 branch hack link..."
     else
         cp $WORKDIR/patches/KernelSU/Backport/hook_patches_ksu-$KERNEL_VER.patch $KERNEL_DIR/
         cd $KERNEL_DIR && patch -p1 < hook_patches_ksu-$KERNEL_VER.patch
